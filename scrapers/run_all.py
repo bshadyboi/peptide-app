@@ -43,6 +43,11 @@ from scrapers.vendors.zenith_biopeptides import (
     scrape_zenith_biopeptides,
     zenith_biopeptides_to_prices,
 )
+from scrapers.vendors.alpha_peptides import alpha_peptides_to_prices, scrape_alpha_peptides
+from scrapers.vendors.lumi_peptides import lumi_peptides_to_prices, scrape_lumi_peptides
+from scrapers.vendors.oneday_compounds import oneday_compounds_to_prices, scrape_oneday_compounds
+from scrapers.vendors.polaris_peptides import polaris_peptides_to_prices, scrape_polaris_peptides
+from scrapers.vendors.riptide_wellness import riptide_wellness_to_prices, scrape_riptide_wellness
 
 SCRAPERS: list[tuple[str, object, object]] = [
     ("Core Peptides", scrape_core_peptides, core_peptides_to_prices),
@@ -60,6 +65,11 @@ SCRAPERS: list[tuple[str, object, object]] = [
     ("Hightide Compounds", scrape_hightide_compounds, hightide_compounds_to_prices),
     ("Planet Peptides", scrape_planet_peptides, planet_peptides_to_prices),
     ("Zenith Biopeptides", scrape_zenith_biopeptides, zenith_biopeptides_to_prices),
+    ("Polaris Peptides", scrape_polaris_peptides, polaris_peptides_to_prices),
+    ("Lumi Peptides", scrape_lumi_peptides, lumi_peptides_to_prices),
+    ("Oneday Compounds", scrape_oneday_compounds, oneday_compounds_to_prices),
+    ("Alpha Peptides", scrape_alpha_peptides, alpha_peptides_to_prices),
+    ("Riptide Wellness", scrape_riptide_wellness, riptide_wellness_to_prices),
 ]
 
 
