@@ -47,7 +47,9 @@ from scrapers.vendors.alpha_peptides import alpha_peptides_to_prices, scrape_alp
 from scrapers.vendors.lumi_peptides import lumi_peptides_to_prices, scrape_lumi_peptides
 from scrapers.vendors.oneday_compounds import oneday_compounds_to_prices, scrape_oneday_compounds
 from scrapers.vendors.polaris_peptides import polaris_peptides_to_prices, scrape_polaris_peptides
+from scrapers.vendors.prime_peptides import prime_peptides_to_prices, scrape_prime_peptides
 from scrapers.vendors.riptide_wellness import riptide_wellness_to_prices, scrape_riptide_wellness
+from scrapers.vendors.zen_aminos import scrape_zen_aminos, zen_aminos_to_prices
 
 SCRAPERS: list[tuple[str, object, object]] = [
     ("Core Peptides", scrape_core_peptides, core_peptides_to_prices),
@@ -70,6 +72,8 @@ SCRAPERS: list[tuple[str, object, object]] = [
     ("Oneday Compounds", scrape_oneday_compounds, oneday_compounds_to_prices),
     ("Alpha Peptides", scrape_alpha_peptides, alpha_peptides_to_prices),
     ("Riptide Wellness", scrape_riptide_wellness, riptide_wellness_to_prices),
+    ("Prime Peptides", scrape_prime_peptides, prime_peptides_to_prices),
+    ("Zen Aminos", scrape_zen_aminos, zen_aminos_to_prices),
 ]
 
 
