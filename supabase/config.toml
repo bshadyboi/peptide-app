@@ -1,0 +1,10 @@
+# Edge functions config. Cron schedules run via GitHub Actions (see .github/workflows/).
+
+[functions.snapshot-prices]
+verify_jwt = false
+
+[functions.check-alerts]
+verify_jwt = false
+
+[functions.review-submission]
+verify_jwt = false
