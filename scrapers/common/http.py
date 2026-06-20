@@ -13,7 +13,7 @@ def browser_session() -> requests.Session:
     session.headers.update(
         {
             "User-Agent": BROWSER_USER_AGENT,
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept": "application/json, text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9",
         }
     )

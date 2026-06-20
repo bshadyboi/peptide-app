@@ -46,8 +46,8 @@ def fetch_store_product(
         if attempt > 0:
             time.sleep(min(30, 5 * (2**attempt)))
         response = session.get(url, params={"slug": slug}, timeout=30)
-        if response.status_code == 429:
-            last_error = requests.HTTPError("429 Too Many Requests", response=response)
+        if response.status_code in (403, 429):
+            last_error = requests.HTTPError(f"{response.status_code}", response=response)
             time.sleep(min(60, 10 * (2**attempt)))
             continue
         response.raise_for_status()
@@ -72,8 +72,8 @@ def fetch_store_product_by_id(
         if attempt > 0:
             time.sleep(min(30, 5 * (2**attempt)))
         response = session.get(url, timeout=30)
-        if response.status_code == 429:
-            last_error = requests.HTTPError("429 Too Many Requests", response=response)
+        if response.status_code in (403, 429):
+            last_error = requests.HTTPError(f"{response.status_code}", response=response)
             time.sleep(min(60, 10 * (2**attempt)))
             continue
         if response.status_code == 404:

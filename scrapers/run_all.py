@@ -18,16 +18,31 @@ from scrapers.db import (
 )
 from scrapers.vendors.core_peptides import core_peptides_to_prices, scrape_core_peptides
 from scrapers.vendors.eon_peptides import eon_peptides_to_prices, scrape_eon_peptides
+from scrapers.vendors.fusion_peptide import fusion_peptide_to_prices, scrape_fusion_peptide
+from scrapers.vendors.hightide_compounds import (
+    hightide_compounds_to_prices,
+    scrape_hightide_compounds,
+)
 from scrapers.vendors.iron_bio_lab import iron_bio_lab_to_prices, scrape_iron_bio_lab
 from scrapers.vendors.iron_aminos import iron_aminos_to_prices, scrape_iron_aminos
 from scrapers.vendors.olympex_solutions import (
     olympex_solutions_to_prices,
     scrape_olympex_solutions,
 )
+from scrapers.vendors.pacific_edge_labs import (
+    pacific_edge_labs_to_prices,
+    scrape_pacific_edge_labs,
+)
 from scrapers.vendors.peptira import peptira_to_prices, scrape_peptira
+from scrapers.vendors.planet_peptides import planet_peptides_to_prices, scrape_planet_peptides
 from scrapers.vendors.swiss_chems import scrape_swiss_chems, swiss_chems_to_prices
 from scrapers.vendors.swift_peptides import scrape_swift_peptides, swift_peptides_to_prices
 from scrapers.vendors.true_aminos import scrape_true_aminos, true_aminos_to_prices
+from scrapers.vendors.vector_peps import scrape_vector_peps, vector_peps_to_prices
+from scrapers.vendors.zenith_biopeptides import (
+    scrape_zenith_biopeptides,
+    zenith_biopeptides_to_prices,
+)
 
 SCRAPERS: list[tuple[str, object, object]] = [
     ("Core Peptides", scrape_core_peptides, core_peptides_to_prices),
@@ -39,6 +54,12 @@ SCRAPERS: list[tuple[str, object, object]] = [
     ("Iron Bio Lab", scrape_iron_bio_lab, iron_bio_lab_to_prices),
     ("Peptira", scrape_peptira, peptira_to_prices),
     ("True Amino Labs", scrape_true_aminos, true_aminos_to_prices),
+    ("Pacific Edge Labs", scrape_pacific_edge_labs, pacific_edge_labs_to_prices),
+    ("Vector Peps", scrape_vector_peps, vector_peps_to_prices),
+    ("Fusion Peptide", scrape_fusion_peptide, fusion_peptide_to_prices),
+    ("Hightide Compounds", scrape_hightide_compounds, hightide_compounds_to_prices),
+    ("Planet Peptides", scrape_planet_peptides, planet_peptides_to_prices),
+    ("Zenith Biopeptides", scrape_zenith_biopeptides, zenith_biopeptides_to_prices),
 ]
 
 

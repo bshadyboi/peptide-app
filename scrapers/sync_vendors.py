@@ -35,7 +35,8 @@ VENDORS = [
     ("e4000001-0000-4000-8000-00000000001a", "Pacific Edge Labs", "https://pacificedgelabs.com", "USA", "Scraper: pending"),
     ("e4000001-0000-4000-8000-00000000001b", "Vertex Labs", None, None, "Peptide URL not confirmed"),
     ("e4000001-0000-4000-8000-00000000001c", "Zenith Biopeptides", "https://zenithbiopeptides.com", "USA", "Scraper: pending"),
-    ("e4000001-0000-4000-8000-00000000001d", "Planet Peptides", "https://planetpeptide.com", "USA", "Scraper: Cloudflare — pending"),
+    ("e4000001-0000-4000-8000-00000000001d", "Planet Peptides", "https://planetpeptide.com", "USA", "Scraper: live (Store API)"),
+    ("e4000001-0000-4000-8000-00000000001e", "Fusion Peptide", "https://fusionpeptide.com", "USA", "Scraper: live (Store API)"),
 ]
 
 
