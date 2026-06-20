@@ -37,7 +37,7 @@ def scrape_eon_peptides() -> list[ParsedVariation]:
     results: list[ParsedVariation] = []
     for index, product in enumerate(PRODUCTS):
         if index > 0:
-            time.sleep(4)
+            time.sleep(5)
         results.extend(scrape_store_catalog(session, BASE_URL, [product]))
     return results
 

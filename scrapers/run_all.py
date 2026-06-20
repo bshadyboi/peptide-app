@@ -69,14 +69,15 @@ def main() -> int:
     else:
         print("Skipping Paradigm (Cloudflare). Pass --with-paradigm after: playwright install chromium")
 
-    exit_code = 0
+    vendors_ok = 0
+    vendors_failed = 0
     for name, scrape_fn, map_fn in scrapers:
         try:
             variations = scrape_fn()
             prices, missing = map_fn(variations, dose_map)
             if not variations:
                 print(f"{name}: no data parsed (site may have changed).")
-                exit_code = 1
+                vendors_failed += 1
                 continue
             written = upsert_prices(client, prices)
             vendor_id = prices[0].vendor_id if prices else ""
@@ -85,11 +86,17 @@ def main() -> int:
                 f"{name}: parsed {len(variations)} variation(s), "
                 f"upserted {written}, marked {len(missing)} OOS."
             )
+            vendors_ok += 1
         except Exception as exc:
             print(f"{name}: FAILED — {exc}")
-            exit_code = 1
+            vendors_failed += 1
 
-    return exit_code
+    if vendors_ok == 0:
+        print("All vendors failed.")
+        return 1
+    if vendors_failed:
+        print(f"Done with warnings: {vendors_ok} succeeded, {vendors_failed} failed.")
+    return 0
 
 
 if __name__ == "__main__":
