@@ -22,6 +22,7 @@ struct PeptidePriceTrackerApp: App {
           guard SupabaseConfig.isConfigured else { return }
           await syncService.ensureSignedIn()
           pushService.registerForPushNotifications()
+          await pushService.uploadPendingTokenIfNeeded()
         }
     }
     .modelContainer(ModelContainerFactory.shared)

@@ -6,6 +6,10 @@ struct WatchlistView: View {
   @EnvironmentObject private var syncService: DataSyncService
   @Query(sort: \PriceAlert.createdAt, order: .reverse) private var alerts: [PriceAlert]
 
+  private var activeAlerts: [PriceAlert] {
+    alerts.filter(\.active)
+  }
+
   var body: some View {
     NavigationStack {
       Group {
@@ -15,15 +19,15 @@ struct WatchlistView: View {
           } description: {
             Text("Add your Supabase URL and anon key in Secrets.xcconfig.")
           }
-        } else if alerts.isEmpty {
+        } else if activeAlerts.isEmpty {
           ContentUnavailableView {
             Label("No Alerts Yet", systemImage: "bell")
           } description: {
-            Text("Tap \"Alert me\" on a peptide detail screen to track a target $/mg.")
+            Text("Tap Alert on a peptide detail screen to track a target $/mg.")
           }
         } else {
           List {
-            ForEach(alerts.filter(\.active), id: \.id) { alert in
+            ForEach(activeAlerts, id: \.id) { alert in
               NavigationLink {
                 if let peptide = alert.dose?.peptide {
                   PeptideDetailView(peptide: peptide)
@@ -34,6 +38,7 @@ struct WatchlistView: View {
             }
             .onDelete(perform: deleteAlerts)
           }
+          .listStyle(.plain)
         }
       }
       .navigationTitle("Watchlist")
@@ -49,10 +54,9 @@ struct WatchlistView: View {
   }
 
   private func deleteAlerts(at offsets: IndexSet) {
-    let active = alerts.filter(\.active)
     Task {
       for index in offsets {
-        let alert = active[index]
+        let alert = activeAlerts[index]
         try? await syncService.deleteAlert(id: alert.id, context: modelContext)
       }
     }
@@ -74,43 +78,60 @@ private struct WatchlistRow: View {
   }
 
   var body: some View {
-    HStack(spacing: 12) {
-      Circle()
-        .fill(isTriggered ? Color.red : Color.clear)
-        .frame(width: 10, height: 10)
-        .overlay {
-          Circle()
-            .stroke(Color.secondary.opacity(0.3), lineWidth: isTriggered ? 0 : 1)
+    HStack(spacing: 14) {
+      if let slug = dose?.peptide?.slug {
+        PeptideArtwork(slug: slug, size: 44, cornerRadius: 12)
+      } else {
+        ZStack {
+          RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(AppTheme.accentSoft)
+            .frame(width: 44, height: 44)
+          Image(systemName: "bell")
+            .foregroundStyle(AppTheme.accent)
         }
+      }
 
       VStack(alignment: .leading, spacing: 4) {
         Text(dose?.peptide?.name ?? "Unknown peptide")
-          .font(.headline)
+          .font(.body)
+          .fontWeight(.semibold)
 
-        if let dose {
-          Text(dose.displayName)
-            .font(.caption)
+        HStack(spacing: 6) {
+          if let dose {
+            Text(dose.displayName)
+              .foregroundStyle(.secondary)
+          }
+          Text("·")
+            .foregroundStyle(.tertiary)
+          Text("target \(CurrencyFormatter.formatPerMg(alert.targetPerMg))")
             .foregroundStyle(.secondary)
         }
-
-        Text("Target \(CurrencyFormatter.formatPerMg(alert.targetPerMg))")
-          .font(.caption)
-          .foregroundStyle(.secondary)
+        .font(.caption)
       }
 
       Spacer()
 
-      if let best = bestPricePerMg {
-        Text(CurrencyFormatter.formatPerMg(best))
-          .font(.subheadline)
-          .fontWeight(.semibold)
-          .foregroundStyle(isTriggered ? .red : .primary)
-      } else {
-        Text("—")
-          .foregroundStyle(.secondary)
+      VStack(alignment: .trailing, spacing: 2) {
+        if let best = bestPricePerMg {
+          Text(CurrencyFormatter.formatPerMg(best))
+            .font(.subheadline)
+            .fontWeight(.bold)
+            .foregroundStyle(isTriggered ? AppTheme.sale : AppTheme.inStock)
+            .monospacedDigit()
+
+          if isTriggered {
+            Label("At target", systemImage: "bell.fill")
+              .font(.caption2)
+              .fontWeight(.semibold)
+              .foregroundStyle(AppTheme.sale)
+          }
+        } else {
+          Text("—")
+            .foregroundStyle(.tertiary)
+        }
       }
     }
-    .padding(.vertical, 4)
+    .padding(.vertical, 6)
   }
 }
 

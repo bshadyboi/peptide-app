@@ -35,32 +35,51 @@ enum PeptideCatalog {
     "semaglutide",
     "tirzepatide",
     "retatrutide",
+    "survodutide",
+    "cagrilintide",
     "ipamorelin",
     "tesamorelin",
     "ghk-cu",
     "bpc-tb-blend",
+    "glow-blend",
+    "klow-blend",
+    "ghk-kpv-blend",
     "cjc-ipa-blend",
+    "tes-ipa-blend",
+    "ghrp-ipa-blend",
     "ghrp-6",
     "sermorelin",
     "melanotan-ii",
     "semax",
+    "adamax",
     "epitalon",
+    "kpv",
+    "nad-plus",
+    "mots-c",
+    "foxo4-dri",
+    "igf-1-lr3",
+    "ta-1",
+    "vip",
   ]
 
   static func topic(for slug: String) -> PeptideTopic {
     switch slug {
-    case "bpc-157", "tb-500", "bpc-tb-blend":
+    case "bpc-157", "tb-500", "bpc-tb-blend", "kpv", "ll-37", "ara-290",
+         "glow-blend", "klow-blend", "ghk-kpv-blend":
       return .healing
     case "ipamorelin", "tesamorelin", "sermorelin", "ghrp-6", "ghrp-2",
-         "cjc-1295-dac", "cjc-1295-no-dac", "hexarelin", "cjc-ipa-blend":
+         "cjc-1295-dac", "cjc-1295-no-dac", "hexarelin", "cjc-ipa-blend",
+         "tes-ipa-blend", "ghrp-ipa-blend", "igf-1-lr3", "peg-mgf":
       return .growth
-    case "semaglutide", "tirzepatide", "retatrutide":
+    case "semaglutide", "tirzepatide", "retatrutide", "cagrilintide", "survodutide":
       return .glp
-    case "melanotan-ii", "pt-141", "ghk-cu":
+    case "melanotan-ii", "melanotan-i", "pt-141", "ghk-cu", "snap-8":
       return .cosmetic
-    case "selank", "semax", "dsip":
+    case "selank", "semax", "dsip", "adamax", "dihexa":
       return .cognitive
-    case "epitalon", "mots-c", "aod-9604":
+    case "epitalon", "mots-c", "aod-9604", "nad-plus", "glutathione", "ss-31",
+         "5-amino-1mq", "foxo4-dri", "thymalin", "ta-1", "vip", "oxytocin",
+         "kisspeptin", "hgh-frag-176-191":
       return .longevity
     default:
       return .all

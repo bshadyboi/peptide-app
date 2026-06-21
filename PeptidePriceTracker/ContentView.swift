@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct ContentView: View {
+  @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+
   init() {
     UITabBar.appearance().unselectedItemTintColor = UIColor.secondaryLabel
   }
@@ -9,7 +11,7 @@ struct ContentView: View {
     TabView {
       HomeView()
         .tabItem {
-          Label("Prices", systemImage: "chart.bar.doc.horizontal")
+          Label("Compare", systemImage: "list.bullet")
         }
 
       WatchlistView()
@@ -23,6 +25,18 @@ struct ContentView: View {
         }
     }
     .tint(AppTheme.accent)
+    .fullScreenCover(isPresented: onboardingBinding) {
+      OnboardingView(isPresented: onboardingBinding)
+    }
+  }
+
+  private var onboardingBinding: Binding<Bool> {
+    Binding(
+      get: { !hasCompletedOnboarding },
+      set: { show in
+        if !show { hasCompletedOnboarding = true }
+      }
+    )
   }
 }
 

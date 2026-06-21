@@ -9,6 +9,12 @@ private struct HistoryChartPoint: Identifiable {
   let vendorName: String
 }
 
+private struct DailyBestPoint: Identifiable {
+  let id: Date
+  let date: Date
+  let pricePerMg: Double
+}
+
 struct PriceHistoryView: View {
   let dose: Dose
 
@@ -42,6 +48,38 @@ struct PriceHistoryView: View {
       }
   }
 
+  private var dailyBestPoints: [DailyBestPoint] {
+    let daily = PriceHistoryAnalytics.dailyBestPrices(from: points.filter { $0.capturedAt >= range.startDate })
+    return daily.map { row in
+      DailyBestPoint(
+        id: row.date,
+        date: row.date,
+        pricePerMg: NSDecimalNumber(decimal: row.pricePerMg).doubleValue
+      )
+    }
+  }
+
+  private var historicalLow: Double? {
+    dailyBestPoints.map(\.pricePerMg).min()
+  }
+
+  private var currentBest: Decimal? {
+    Price.sortedForCompare(dose.prices).first(where: \.inStock)?.pricePerMg
+  }
+
+  private var trend: PriceTrend {
+    PriceHistoryAnalytics.trend(
+      for: dose.id,
+      currentBestPerMg: currentBest,
+      points: points,
+      lookbackDays: range == .days30 ? 30 : range == .days90 ? 90 : 365
+    )
+  }
+
+  private var daysUntilUseful: Int {
+    max(0, 3 - (trend.daysOfHistory ?? 0))
+  }
+
   private var vendorNames: [String] {
     Array(Set(chartPoints.map(\.vendorName))).sorted()
   }
@@ -56,6 +94,10 @@ struct PriceHistoryView: View {
       .pickerStyle(.segmented)
       .padding(.horizontal)
 
+      if !chartPoints.isEmpty {
+        historyStatsHeader
+      }
+
       if syncService.isSyncing, chartPoints.isEmpty {
         Spacer()
         ProgressView("Loading history…")
@@ -66,17 +108,45 @@ struct PriceHistoryView: View {
         ContentUnavailableView {
           Label("No History Yet", systemImage: "chart.xyaxis.line")
         } description: {
-          Text("Price history builds automatically after the daily snapshot job runs. Pull to refresh once snapshots exist.")
+          if daysUntilUseful > 0 {
+            Text("Snapshots run daily at 3am UTC. Check back in about \(daysUntilUseful) day\(daysUntilUseful == 1 ? "" : "s") for trend data.")
+          } else {
+            Text("Price history builds automatically after the daily snapshot job runs. Pull to refresh.")
+          }
         }
         Spacer()
       } else {
-        Chart(chartPoints) { point in
-          LineMark(
-            x: .value("Date", point.capturedAt),
-            y: .value("Price per mg", point.pricePerMg)
-          )
-          .foregroundStyle(by: .value("Vendor", point.vendorName))
-          .interpolationMethod(.catmullRom)
+        Chart {
+          ForEach(chartPoints) { point in
+            LineMark(
+              x: .value("Date", point.capturedAt),
+              y: .value("Price per mg", point.pricePerMg)
+            )
+            .foregroundStyle(by: .value("Vendor", point.vendorName))
+            .interpolationMethod(.catmullRom)
+            .opacity(0.45)
+          }
+
+          ForEach(dailyBestPoints) { point in
+            LineMark(
+              x: .value("Date", point.date),
+              y: .value("Best market", point.pricePerMg)
+            )
+            .foregroundStyle(AppTheme.inStock)
+            .lineStyle(StrokeStyle(lineWidth: 2.5))
+            .interpolationMethod(.catmullRom)
+          }
+
+          if let historicalLow {
+            RuleMark(y: .value("Lowest ever", historicalLow))
+              .foregroundStyle(AppTheme.accent.opacity(0.35))
+              .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+              .annotation(position: .top, alignment: .trailing) {
+                Text("Low \(CurrencyFormatter.formatPerMg(Decimal(historicalLow)))")
+                  .font(.caption2)
+                  .foregroundStyle(.secondary)
+              }
+          }
         }
         .chartYAxisLabel("$/mg")
         .chartXAxis {
@@ -86,6 +156,16 @@ struct PriceHistoryView: View {
           }
         }
         .padding()
+
+        HStack(spacing: 8) {
+          Circle().fill(AppTheme.inStock).frame(width: 8, height: 8)
+          Text("Best market $/mg")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+          Spacer()
+          PriceDropBadge(trend: trend)
+        }
+        .padding(.horizontal)
 
         if !vendorNames.isEmpty {
           VStack(alignment: .leading, spacing: 8) {
@@ -112,6 +192,47 @@ struct PriceHistoryView: View {
     .refreshable {
       await syncService.syncHistory(for: dose.id, range: range, context: modelContext)
     }
+  }
+
+  private var historyStatsHeader: some View {
+    HStack(spacing: 16) {
+      if let currentBest {
+        VStack(alignment: .leading, spacing: 2) {
+          Text("Current best")
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+          Text(CurrencyFormatter.formatPerMg(currentBest))
+            .font(.headline)
+            .foregroundStyle(AppTheme.inStock)
+            .monospacedDigit()
+        }
+      }
+
+      if let historicalLow {
+        VStack(alignment: .leading, spacing: 2) {
+          Text("Period low")
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+          Text(CurrencyFormatter.formatPerMg(Decimal(historicalLow)))
+            .font(.headline)
+            .monospacedDigit()
+        }
+      }
+
+      Spacer()
+
+      if let days = trend.daysOfHistory {
+        VStack(alignment: .trailing, spacing: 2) {
+          Text("Tracking")
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+          Text("\(days)d")
+            .font(.headline)
+            .monospacedDigit()
+        }
+      }
+    }
+    .padding(.horizontal)
   }
 }
 

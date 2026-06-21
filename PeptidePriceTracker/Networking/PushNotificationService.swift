@@ -25,6 +25,11 @@ final class PushNotificationService: NSObject, ObservableObject {
     }
   }
 
+  func uploadPendingTokenIfNeeded() async {
+    guard let token = deviceToken else { return }
+    await uploadToken(token)
+  }
+
   func handleDeviceToken(_ tokenData: Data) {
     let token = tokenData.map { String(format: "%02.2hhx", $0) }.joined()
     deviceToken = token

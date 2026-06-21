@@ -122,7 +122,7 @@ xcodegen generate && open PeptidePriceTracker.xcodeproj
 |------|-----|
 | Anonymous auth toggle | Supabase Dashboard only |
 | Apple APNs keys | Apple Developer account |
-| Xcode signing team | Your Apple ID |
+| Xcode signing team | Your Apple ID — see [TESTFLIGHT.md](TESTFLIGHT.md) |
 | `seed.sql` on brand-new DB | One-time sample data |
 
 Everything else — migrations, functions, scrapers, cron — runs from git push or GitHub schedules.

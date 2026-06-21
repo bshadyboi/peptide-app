@@ -14,17 +14,36 @@ final class DataSyncService: ObservableObject {
     self.authSession = authSession
   }
 
+  private var catalogSyncTask: Task<Void, Never>?
+  private var catalogSyncGeneration = 0
+
   /// Full catalog sync: peptides, doses, vendors, prices → SwiftData.
   func syncCatalog(context: ModelContext) async {
     guard let api else {
       lastError = APIError.notConfigured.errorDescription
       return
     }
-    guard !isSyncing else { return }
+
+    let previous = catalogSyncTask
+    catalogSyncGeneration += 1
+    let generation = catalogSyncGeneration
     isSyncing = true
     lastError = nil
-    defer { isSyncing = false }
 
+    let task = Task { @MainActor in
+      if let previous { await previous.value }
+      await performCatalogSync(api: api, context: context)
+    }
+    catalogSyncTask = task
+    await task.value
+
+    if generation == catalogSyncGeneration {
+      catalogSyncTask = nil
+      isSyncing = false
+    }
+  }
+
+  private func performCatalogSync(api: APIClient, context: ModelContext) async {
     var errors: [String] = []
 
     do {
@@ -34,7 +53,7 @@ final class DataSyncService: ObservableObject {
       }
       try context.save()
     } catch {
-      errors.append("Peptides: \(error.localizedDescription)")
+      appendSyncError(&errors, label: "Peptides", error: error)
     }
 
     do {
@@ -44,7 +63,7 @@ final class DataSyncService: ObservableObject {
       }
       try context.save()
     } catch {
-      errors.append("Vendors: \(error.localizedDescription)")
+      appendSyncError(&errors, label: "Vendors", error: error)
     }
 
     do {
@@ -54,12 +73,40 @@ final class DataSyncService: ObservableObject {
       }
       try context.save()
     } catch {
-      errors.append("Prices: \(error.localizedDescription)")
+      appendSyncError(&errors, label: "Prices", error: error)
     }
 
     if !errors.isEmpty {
       lastError = errors.joined(separator: "\n")
     }
+
+    await syncBrowseTrends(context: context)
+  }
+
+  /// Prefetch 30-day history for popular peptides so home can show price drops.
+  func syncBrowseTrends(context: ModelContext) async {
+    guard api != nil else { return }
+    let descriptor = FetchDescriptor<Peptide>()
+    guard let peptides = try? context.fetch(descriptor) else { return }
+
+    for slug in PeptideCatalog.popularSlugs.prefix(12) {
+      guard let peptide = peptides.first(where: { $0.slug == slug }),
+            let dose = peptide.defaultDose else { continue }
+      await syncHistory(for: dose.id, range: .days30, context: context)
+      try? await Task.sleep(nanoseconds: 100_000_000)
+    }
+  }
+
+  private func appendSyncError(_ errors: inout [String], label: String, error: Error) {
+    if Self.isBenignCancellation(error) { return }
+    errors.append("\(label): \(error.localizedDescription)")
+  }
+
+  private static func isBenignCancellation(_ error: Error) -> Bool {
+    if error is CancellationError { return true }
+    if let urlError = error as? URLError, urlError.code == .cancelled { return true }
+    let nsError = error as NSError
+    return nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled
   }
 
   /// Refresh prices for a single dose (detail screen).
@@ -75,7 +122,9 @@ final class DataSyncService: ObservableObject {
       }
       try context.save()
     } catch {
-      lastError = error.localizedDescription
+      if !Self.isBenignCancellation(error) {
+        lastError = error.localizedDescription
+      }
     }
   }
 

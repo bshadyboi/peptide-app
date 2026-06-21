@@ -8,10 +8,6 @@ enum AppTheme {
   static let inStock = Color(red: 0.13, green: 0.59, blue: 0.33)
   static let outOfStock = Color.secondary
   static let sale = Color(red: 0.85, green: 0.33, blue: 0.22)
-
-  static func cardShadow() -> some View {
-    EmptyView()
-  }
 }
 
 struct CardStyle: ViewModifier {

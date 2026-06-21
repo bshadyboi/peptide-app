@@ -49,6 +49,8 @@ from scrapers.vendors.oneday_compounds import oneday_compounds_to_prices, scrape
 from scrapers.vendors.polaris_peptides import polaris_peptides_to_prices, scrape_polaris_peptides
 from scrapers.vendors.prime_peptides import prime_peptides_to_prices, scrape_prime_peptides
 from scrapers.vendors.riptide_wellness import riptide_wellness_to_prices, scrape_riptide_wellness
+from scrapers.vendors.peptiprices_batch import PEPTIPRICES_BATCH_SCRAPERS
+from scrapers.vendors.peptiprices_batch2 import PEPTIPRICES_BATCH2_SCRAPERS
 from scrapers.vendors.zen_aminos import scrape_zen_aminos, zen_aminos_to_prices
 
 SCRAPERS: list[tuple[str, object, object]] = [
@@ -75,6 +77,8 @@ SCRAPERS: list[tuple[str, object, object]] = [
     ("Prime Peptides", scrape_prime_peptides, prime_peptides_to_prices),
     ("Zen Aminos", scrape_zen_aminos, zen_aminos_to_prices),
 ]
+SCRAPERS.extend(PEPTIPRICES_BATCH_SCRAPERS)
+SCRAPERS.extend(PEPTIPRICES_BATCH2_SCRAPERS)
 
 
 def run_paradigm() -> tuple[int, int]:
