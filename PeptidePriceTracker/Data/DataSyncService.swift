@@ -79,22 +79,6 @@ final class DataSyncService: ObservableObject {
     if !errors.isEmpty {
       lastError = errors.joined(separator: "\n")
     }
-
-    await syncBrowseTrends(context: context)
-  }
-
-  /// Prefetch 30-day history for popular peptides so home can show price drops.
-  func syncBrowseTrends(context: ModelContext) async {
-    guard api != nil else { return }
-    let descriptor = FetchDescriptor<Peptide>()
-    guard let peptides = try? context.fetch(descriptor) else { return }
-
-    for slug in PeptideCatalog.popularSlugs.prefix(12) {
-      guard let peptide = peptides.first(where: { $0.slug == slug }),
-            let dose = peptide.defaultDose else { continue }
-      await syncHistory(for: dose.id, range: .days30, context: context)
-      try? await Task.sleep(nanoseconds: 100_000_000)
-    }
   }
 
   private func appendSyncError(_ errors: inout [String], label: String, error: Error) {

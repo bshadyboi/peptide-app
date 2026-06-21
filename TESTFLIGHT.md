@@ -51,10 +51,15 @@ Entitlements are already enabled in the project (`PeptidePriceTracker.entitlemen
 After TestFlight install, you **do not** need to rebuild for:
 
 - Scraper price updates (every 6 hours via GitHub Actions)
-- Daily price history snapshots
+- Daily price history snapshots (3 AM UTC — powers drop badges after ~3 days)
 - Hourly alert checks
 
 You **do** need a new TestFlight build when we change the iOS app code.
+
+### Watchlist tabs
+
+- **Saved** — heart a peptide on its detail screen
+- **Alerts** — set a target $/mg from detail → Alert
 
 ## 5. App Store Connect app record (first time)
 

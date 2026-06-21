@@ -9,6 +9,12 @@ jobs:
   snapshot:
     runs-on: ubuntu-latest
     steps:
-      - run: |
-          curl -sf -X POST "${{ secrets.SUPABASE_URL }}/functions/v1/snapshot-prices" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+      - name: Snapshot in-stock prices to price_history
+        run: |
+          set -euo pipefail
+          code=$(curl -s -o /tmp/snapshot-body.txt -w "%{http_code}" -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/snapshot-prices" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}")
+          echo "HTTP $code"
+          cat /tmp/snapshot-body.txt
+          test "$code" -ge 200 && test "$code" -lt 300

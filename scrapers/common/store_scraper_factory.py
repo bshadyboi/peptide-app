@@ -22,7 +22,7 @@ def build_store_scraper(
         results: list[ParsedVariation] = []
         for index, product in enumerate(products):
             if index > 0:
-                time.sleep(0.8)
+                time.sleep(1.2)
             results.extend(scrape_store_catalog(session, store_base, [product]))
         return results
 

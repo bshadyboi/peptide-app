@@ -5,6 +5,7 @@ import SwiftData
 struct PeptidePriceTrackerApp: App {
   @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
   @StateObject private var pushService = PushNotificationService()
+  @StateObject private var favorites = FavoritesStore()
   @StateObject private var syncService: DataSyncService
 
   init() {
@@ -16,6 +17,7 @@ struct PeptidePriceTrackerApp: App {
     WindowGroup {
       ContentView()
         .environmentObject(syncService)
+        .environmentObject(favorites)
         .task {
           appDelegate.pushService = pushService
           pushService.configure(authSession: syncService.authSession, api: APIClient())

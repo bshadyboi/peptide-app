@@ -11,8 +11,10 @@
 		103B0871B405E9B428F01578 /* BestPriceCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F3CF1ACAE27C673FA9C6777 /* BestPriceCard.swift */; };
 		115A36B95CA93CFE4D166FDA /* PeptideVisuals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70603CE558C08F16F8F859BC /* PeptideVisuals.swift */; };
 		1A85CB75623985CB3B184F44 /* SupabaseConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34F989669A400A933E914A2E /* SupabaseConfig.swift */; };
+		23C53668B8EF10FB9C8DECB0 /* DarkHomeUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 370BB942324138DE2DFCD57F /* DarkHomeUI.swift */; };
 		2F7FC652F067C22849ACC3A6 /* SubmitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD5DFD6BAD233FD8FE5C96E5 /* SubmitView.swift */; };
 		2FC875D6F5C786961D6EC6FA /* Peptide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E225FADD55185C1AD607B5E /* Peptide.swift */; };
+		319A949957D1C42644045C1D /* FavoritesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990130D980FCE08771430870 /* FavoritesStore.swift */; };
 		36725886AF2A6A77849D9AA8 /* ModelContainerFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C543EB19C8A144911ED7802 /* ModelContainerFactory.swift */; };
 		3B3ED2B70D8D679D66464EF1 /* Vendor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A86A56405A132BBF91A5785 /* Vendor.swift */; };
 		3DF15C3E96E8256D8AFEA1AD /* PeptideCompareCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07B371FE28BF7FE482BD8D55 /* PeptideCompareCard.swift */; };
@@ -25,6 +27,7 @@
 		5FD0F38CB59506BAA679A767 /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2BC30CCBFCD05F5B252E4B0 /* PushNotificationService.swift */; };
 		6D3A916F4FFFD046EA8D9084 /* PricePoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70A4F44EDFF4963CC70B1A8A /* PricePoint.swift */; };
 		71E736D737F85FD54F1B3E62 /* TrendingPeptideCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 269AD417217B69B901434F5F /* TrendingPeptideCard.swift */; };
+		797427880FEC53A81A3EDD04 /* HomeHighlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83FDDE54FDD252309BAD294D /* HomeHighlight.swift */; };
 		7DFE2F2663B5ACCB07DC0F73 /* WatchlistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94943AAEDB40EB0A92D89D8C /* WatchlistView.swift */; };
 		816087008AA5AE19CBD38FC2 /* AuthSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACED4F51561FDAAC34F6FDD3 /* AuthSession.swift */; };
 		829744DA3BCBAE9270D65E00 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B9EA6BC638B95303027E882B /* Assets.xcassets */; };
@@ -56,7 +59,7 @@
 		03C7EAF565EEDEC28DED4B5A /* VendorCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VendorCatalog.swift; sourceTree = "<group>"; };
 		07B371FE28BF7FE482BD8D55 /* PeptideCompareCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeptideCompareCard.swift; sourceTree = "<group>"; };
 		0A86A56405A132BBF91A5785 /* Vendor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Vendor.swift; sourceTree = "<group>"; };
-		0CCF27D12214C10A1C97B463 /* PeptidePriceTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PeptidePriceTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0CCF27D12214C10A1C97B463 /* PeptidePriceTracker.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PeptidePriceTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0E225FADD55185C1AD607B5E /* Peptide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Peptide.swift; sourceTree = "<group>"; };
 		0F3CF1ACAE27C673FA9C6777 /* BestPriceCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BestPriceCard.swift; sourceTree = "<group>"; };
 		0F5ED7F5D587997C89B48EF4 /* AlertSetupSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertSetupSheet.swift; sourceTree = "<group>"; };
@@ -67,6 +70,7 @@
 		280C4A96571DD28DB105D42E /* APIDTOs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIDTOs.swift; sourceTree = "<group>"; };
 		2C6E7999377174E0E5C8ECF1 /* PeptideListRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeptideListRow.swift; sourceTree = "<group>"; };
 		34F989669A400A933E914A2E /* SupabaseConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseConfig.swift; sourceTree = "<group>"; };
+		370BB942324138DE2DFCD57F /* DarkHomeUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DarkHomeUI.swift; sourceTree = "<group>"; };
 		4813C6AEE25A184738EE910B /* PeptidePriceTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeptidePriceTrackerApp.swift; sourceTree = "<group>"; };
 		4F3B1B1BAE39321E11AB9159 /* PeptideCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeptideCatalog.swift; sourceTree = "<group>"; };
 		4FB11B9DE56F61C3F8218C7F /* PriceHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceHistoryView.swift; sourceTree = "<group>"; };
@@ -79,10 +83,12 @@
 		788E758912A3E977A1C1B564 /* BlendComponent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlendComponent.swift; sourceTree = "<group>"; };
 		80AC47ED433569A7B1E0EBD1 /* PeptideDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeptideDetailView.swift; sourceTree = "<group>"; };
 		837A2747A6E67B0972163D38 /* VendorCompareTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VendorCompareTable.swift; sourceTree = "<group>"; };
+		83FDDE54FDD252309BAD294D /* HomeHighlight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeHighlight.swift; sourceTree = "<group>"; };
 		8BC3D227701B245B1CE5AC83 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		8C543EB19C8A144911ED7802 /* ModelContainerFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelContainerFactory.swift; sourceTree = "<group>"; };
 		91932D6FF06A7B68FD0AB820 /* PriceAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriceAlert.swift; sourceTree = "<group>"; };
 		94943AAEDB40EB0A92D89D8C /* WatchlistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchlistView.swift; sourceTree = "<group>"; };
+		990130D980FCE08771430870 /* FavoritesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesStore.swift; sourceTree = "<group>"; };
 		9F3075192BBCC38C8BD862FC /* VendorPriceRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VendorPriceRow.swift; sourceTree = "<group>"; };
 		A4C59CEA0794627BCE328123 /* ProductLinkButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductLinkButton.swift; sourceTree = "<group>"; };
 		ACED4F51561FDAAC34F6FDD3 /* AuthSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthSession.swift; sourceTree = "<group>"; };
@@ -146,6 +152,8 @@
 			children = (
 				696D1BA10CC858FC8CDA3BC8 /* AppTheme.swift */,
 				26FF0E10056E13E8DAF442DE /* CurrencyFormatter.swift */,
+				990130D980FCE08771430870 /* FavoritesStore.swift */,
+				83FDDE54FDD252309BAD294D /* HomeHighlight.swift */,
 				4F3B1B1BAE39321E11AB9159 /* PeptideCatalog.swift */,
 				70603CE558C08F16F8F859BC /* PeptideVisuals.swift */,
 				12C4F0C812811256EF8DC6B0 /* PriceHistoryAnalytics.swift */,
@@ -217,6 +225,7 @@
 			children = (
 				0F3CF1ACAE27C673FA9C6777 /* BestPriceCard.swift */,
 				D851B961771ED2A2EE758386 /* CompactVendorRow.swift */,
+				370BB942324138DE2DFCD57F /* DarkHomeUI.swift */,
 				07B371FE28BF7FE482BD8D55 /* PeptideCompareCard.swift */,
 				2C6E7999377174E0E5C8ECF1 /* PeptideListRow.swift */,
 				C337814DC8F07C0B005E26F7 /* PriceDropBadge.swift */,
@@ -326,9 +335,12 @@
 				914CF1C094FE171D1D19A24A /* CompactVendorRow.swift in Sources */,
 				923EED990A199C2AB7595CDA /* ContentView.swift in Sources */,
 				E59C5CAA50300C64FFBC5981 /* CurrencyFormatter.swift in Sources */,
+				23C53668B8EF10FB9C8DECB0 /* DarkHomeUI.swift in Sources */,
 				B97D698FCA60F95486142140 /* DataSyncService.swift in Sources */,
 				85CB893E392DD0A0E9E8CAC7 /* Dose.swift in Sources */,
+				319A949957D1C42644045C1D /* FavoritesStore.swift in Sources */,
 				55758E7A304B62BFC2B153C3 /* HistoryRange.swift in Sources */,
+				797427880FEC53A81A3EDD04 /* HomeHighlight.swift in Sources */,
 				54F6D83879C19D7F1102A924 /* HomeView.swift in Sources */,
 				36725886AF2A6A77849D9AA8 /* ModelContainerFactory.swift in Sources */,
 				CABD654EFD816DA5AE6A496D /* OnboardingView.swift in Sources */,
@@ -400,7 +412,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -428,8 +439,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 2;
-				DEVELOPMENT_TEAM = 66TJD7TX77;
+				CURRENT_PROJECT_VERSION = 3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PeptidePriceTracker/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -439,7 +449,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.peptideprice.tracker;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -483,7 +493,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -518,7 +527,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = PeptidePriceTracker/PeptidePriceTracker.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PeptidePriceTracker/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -528,7 +537,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.peptideprice.tracker;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";

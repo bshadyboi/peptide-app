@@ -7,7 +7,6 @@ struct HomeView: View {
   @Query(sort: \Peptide.name) private var allPeptides: [Peptide]
   @Query(sort: \Vendor.name) private var allVendors: [Vendor]
   @Query private var allPrices: [Price]
-  @Query private var allPricePoints: [PricePoint]
 
   @State private var searchText = ""
   @State private var selectedTab: PeptideCategory = .single
@@ -17,85 +16,232 @@ struct HomeView: View {
   @State private var selectedVendorFilterID: UUID?
   @State private var dealsOnly = false
   @State private var showVendorsSheet = false
-  @State private var browsePeptideID: UUID?
+  @State private var highlight: HomeHighlight?
+  @State private var featuredIndex = 0
 
   private var liveVendorCount: Int {
     VendorCatalog.liveVendors(from: allVendors, prices: allPrices).count
   }
 
   private var filteredPeptides: [Peptide] {
-    let base = allPeptides
-      .filter { $0.category == selectedTab }
-      .filter { !PeptideCatalog.hiddenFromBrowseSlugs.contains($0.slug) }
-      .filter { peptide in
-        selectedTopic == .all || PeptideCatalog.topic(for: peptide.slug) == selectedTopic
+    var list = allPeptides.filter { $0.category == selectedTab }
+    list = list.filter { !PeptideCatalog.hiddenFromBrowseSlugs.contains($0.slug) }
+    if selectedTopic != .all {
+      list = list.filter { PeptideCatalog.topic(for: $0.slug) == selectedTopic }
+    }
+    if let vendorID = selectedVendorFilterID {
+      list = list.filter { VendorCatalog.peptideHasInStockPrice(from: vendorID, peptide: $0) }
+    }
+    if dealsOnly {
+      list = list.filter { PeptideDeals.hasActiveDeal($0) }
+    }
+    if !searchText.isEmpty {
+      let q = searchText.lowercased()
+      list = list.filter {
+        $0.name.lowercased().contains(q) || $0.slug.lowercased().contains(q)
+          || $0.aliases.contains { $0.lowercased().contains(q) }
       }
-      .filter { peptide in
-        guard let vendorID = selectedVendorFilterID else { return true }
-        return VendorCatalog.peptideHasInStockPrice(from: vendorID, peptide: peptide)
-      }
-      .filter { peptide in
-        guard dealsOnly else { return true }
-        return PeptideDeals.hasActiveDeal(peptide)
-      }
-      .filter { peptide in
-        guard !searchText.isEmpty else { return true }
-        let query = searchText.lowercased()
-        if peptide.name.lowercased().contains(query) { return true }
-        if peptide.slug.lowercased().contains(query) { return true }
-        return peptide.aliases.contains { $0.lowercased().contains(query) }
-      }
-    return sorted(base)
+    }
+    switch sortOption {
+    case .name:
+      return list.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    case .popularity:
+      return list.sorted { PeptideCatalog.popularityRank(for: $0.slug) < PeptideCatalog.popularityRank(for: $1.slug) }
+    case .price:
+      return list.sorted { ($0.bestPricePerMg ?? Decimal.sortSentinel) < ($1.bestPricePerMg ?? Decimal.sortSentinel) }
+    }
   }
 
-  private var trendingPeptides: [Peptide] {
-    PeptideCatalog.popularSlugs.compactMap { slug in
-      allPeptides.first { $0.slug == slug }
+  private var featuredPeptides: [Peptide] {
+    var slugs = PeptideCatalog.popularSlugs
+    if let highlight {
+      slugs.removeAll { $0 == highlight.peptide.slug }
+      slugs.insert(highlight.peptide.slug, at: 0)
     }
-    .prefix(8)
-    .map { $0 }
+    return slugs.prefix(5).compactMap { slug in
+      allPeptides.first { $0.slug == slug && $0.bestPricePerMg != nil }
+    }
   }
 
   var body: some View {
     NavigationStack {
-      Group {
-        if !SupabaseConfig.isConfigured {
-          configurationPrompt
-        } else {
-          mainContent
+      ZStack {
+        DarkAuroraBackground()
+
+        Group {
+          if !SupabaseConfig.isConfigured {
+            configurationPrompt
+          } else {
+            browseContent
+          }
         }
       }
-      .background(AppTheme.pageBackground)
       .navigationTitle("Compare")
       .navigationBarTitleDisplayMode(.large)
+      .toolbarBackground(.hidden, for: .navigationBar)
       .toolbar {
         ToolbarItem(placement: .topBarTrailing) {
-          Button {
-            showVendorsSheet = true
+          Menu {
+            Picker("Sort", selection: $sortOption) {
+              ForEach(PeptideSortOption.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            }
+            Picker("Show", selection: $displayMode) {
+              ForEach(PriceDisplayMode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            }
+            Toggle("Deals only", isOn: $dealsOnly)
+            Button { showVendorsSheet = true } label: {
+              Label("Filter by supplier", systemImage: "building.2")
+            }
           } label: {
-            Label("Suppliers", systemImage: "building.2")
+            Image(systemName: "slider.horizontal.3")
+              .foregroundStyle(AppTheme.neonCyan)
           }
-          .accessibilityLabel("Suppliers, \(liveVendorCount) with prices")
         }
       }
       .searchable(text: $searchText, prompt: "Search peptides")
-      .task {
-        guard SupabaseConfig.isConfigured else { return }
-        await syncService.syncCatalog(context: modelContext)
-      }
-      .refreshable {
-        guard SupabaseConfig.isConfigured else { return }
-        await syncService.syncCatalog(context: modelContext)
-      }
+      .preferredColorScheme(.dark)
+      .task { await refresh() }
+      .refreshable { await refresh() }
       .sheet(isPresented: $showVendorsSheet) {
         VendorsListSheet(selectedVendorFilterID: $selectedVendorFilterID)
       }
-      .navigationDestination(item: $browsePeptideID) { peptideID in
-        if let peptide = allPeptides.first(where: { $0.id == peptideID }) {
-          PeptideDetailView(peptide: peptide)
+    }
+  }
+
+  private var browseContent: some View {
+    ScrollView {
+      LazyVStack(alignment: .leading, spacing: 22) {
+        headerSubtitle
+
+        if searchText.isEmpty, !featuredPeptides.isEmpty {
+          featuredCarousel
+        }
+
+        topicFilters
+
+        categoryPicker
+
+        if let error = syncService.lastError {
+          Text(error)
+            .font(.caption)
+            .foregroundStyle(.red.opacity(0.9))
+            .padding(.horizontal, 4)
+        }
+
+        DarkSectionHeader(
+          title: searchText.isEmpty ? "Popular Peptides" : "Results",
+          trailing: "\(filteredPeptides.count) · \(liveVendorCount) suppliers"
+        )
+
+        if syncService.isSyncing, filteredPeptides.isEmpty {
+          ProgressView("Loading…")
+            .tint(AppTheme.neonCyan)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 40)
+        } else if filteredPeptides.isEmpty {
+          emptyState
+        } else {
+          LazyVStack(spacing: 10) {
+            ForEach(filteredPeptides, id: \.id) { peptide in
+              NavigationLink {
+                PeptideDetailView(peptide: peptide)
+              } label: {
+                DarkPeptideListRow(peptide: peptide, displayMode: displayMode)
+              }
+              .buttonStyle(.plain)
+            }
+          }
         }
       }
+      .padding(.horizontal, 16)
+      .padding(.bottom, 24)
     }
+  }
+
+  private var headerSubtitle: some View {
+    Text("Find the best peptide prices")
+      .font(.subheadline)
+      .foregroundStyle(Color.white.opacity(0.55))
+      .padding(.top, -8)
+  }
+
+  private var featuredCarousel: some View {
+    TabView(selection: $featuredIndex) {
+      ForEach(Array(featuredPeptides.enumerated()), id: \.element.id) { index, peptide in
+        BestDealHeroCard(
+          peptide: peptide,
+          badge: carouselBadge(for: peptide, index: index),
+          displayMode: displayMode
+        )
+        .tag(index)
+      }
+    }
+    .tabViewStyle(.page(indexDisplayMode: .always))
+    .frame(height: 230)
+  }
+
+  private func carouselBadge(for peptide: Peptide, index: Int) -> String {
+    if index == 0, let highlight, highlight.peptide.id == peptide.id {
+      return highlight.title
+    }
+    return "Best deal"
+  }
+
+  private var topicFilters: some View {
+    ScrollView(.horizontal, showsIndicators: false) {
+      HStack(spacing: 10) {
+        ForEach(PeptideTopic.allCases) { topic in
+          DarkTopicChip(topic: topic, isSelected: selectedTopic == topic) {
+            selectedTopic = topic
+          }
+        }
+      }
+      .padding(.vertical, 2)
+    }
+  }
+
+  private var categoryPicker: some View {
+    HStack(spacing: 10) {
+      ForEach([PeptideCategory.single, .blend], id: \.self) { category in
+        Button {
+          selectedTab = category
+        } label: {
+          Text(category == .single ? "Singles" : "Blends")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(selectedTab == category ? .white : Color.white.opacity(0.55))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background {
+              Capsule()
+                .fill(selectedTab == category ? AppTheme.darkCard : Color.white.opacity(0.06))
+                .overlay {
+                  if selectedTab == category {
+                    Capsule().strokeBorder(AppTheme.neonCyan.opacity(0.5), lineWidth: 1)
+                  }
+                }
+            }
+        }
+        .buttonStyle(.plain)
+      }
+
+      if selectedVendorFilterID != nil {
+        Button {
+          selectedVendorFilterID = nil
+        } label: {
+          Label("Clear supplier", systemImage: "xmark.circle.fill")
+            .font(.caption)
+            .foregroundStyle(AppTheme.neonCyan)
+        }
+      }
+
+      Spacer()
+    }
+  }
+
+  private func refresh() async {
+    guard SupabaseConfig.isConfigured else { return }
+    await syncService.syncCatalog(context: modelContext)
+    highlight = HomeHighlight.load(from: allPeptides, context: modelContext)
   }
 
   private var configurationPrompt: some View {
@@ -106,249 +252,20 @@ struct HomeView: View {
     }
   }
 
-  private var mainContent: some View {
-    List {
-      if searchText.isEmpty {
-        Section {
-          HomeHeroBanner(
-            vendorCount: liveVendorCount,
-            peptideCount: allPeptides.count
-          )
-          .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 4, trailing: 16))
-          .listRowBackground(Color.clear)
-          .listRowSeparator(.hidden)
-        }
-
-        Section {
-          ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-              ForEach(PeptideTopic.allCases) { topic in
-                TopicExploreTile(
-                  topic: topic,
-                  isSelected: selectedTopic == topic,
-                  action: { selectedTopic = topic }
-                )
-              }
-            }
-            .padding(.vertical, 4)
-          }
-          .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 4, trailing: 16))
-          .listRowBackground(Color.clear)
-          .listRowSeparator(.hidden)
-        } header: {
-          Text("Browse by goal")
-        }
-
-        if !trendingPeptides.isEmpty {
-          Section {
-            ScrollView(.horizontal, showsIndicators: false) {
-              HStack(spacing: 10) {
-                ForEach(trendingPeptides, id: \.id) { peptide in
-                  Button {
-                    browsePeptideID = peptide.id
-                  } label: {
-                    TrendingPeptideCard(peptide: peptide)
-                  }
-                  .buttonStyle(.plain)
-                }
-              }
-              .padding(.vertical, 4)
-            }
-            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
-          } header: {
-            Text("Trending")
-          }
-        }
-      }
-
-      Section {
-        filterControls
-          .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
-          .listRowBackground(Color.clear)
-          .listRowSeparator(.hidden)
-      }
-
-      if let error = syncService.lastError {
-        Section {
-          Text(error)
-            .font(.caption)
-            .foregroundStyle(.red)
-        }
-      }
-
-      Section {
-        if syncService.isSyncing, filteredPeptides.isEmpty {
-          HStack {
-            Spacer()
-            ProgressView("Loading…")
-            Spacer()
-          }
-          .padding(.vertical, 32)
-          .listRowBackground(Color.clear)
-        } else if filteredPeptides.isEmpty {
-          emptyState
-            .listRowBackground(Color.clear)
-        } else {
-          ForEach(filteredPeptides, id: \.id) { peptide in
-            NavigationLink {
-              PeptideDetailView(peptide: peptide)
-            } label: {
-              PeptideListRow(
-                peptide: peptide,
-                displayMode: displayMode,
-                trend: trend(for: peptide)
-              )
-            }
-          }
-        }
-      } header: {
-        listSectionHeader
-      }
-    }
-    .listStyle(.plain)
-    .overlay {
-      if syncService.isSyncing, !filteredPeptides.isEmpty {
-        ProgressView()
-          .padding(8)
-          .background(.ultraThinMaterial)
-          .clipShape(Capsule())
-          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-          .padding()
-      }
-    }
-  }
-
-  private var listSectionHeader: some View {
-    HStack {
-      Text("\(filteredPeptides.count) peptide\(filteredPeptides.count == 1 ? "" : "s")")
-      Spacer()
-      if selectedVendorFilterID != nil {
-        Button("Clear supplier") {
-          selectedVendorFilterID = nil
-        }
-        .font(.caption)
-      }
-    }
-  }
-
-  private var filterControls: some View {
-    VStack(spacing: 12) {
-      Picker("Category", selection: $selectedTab) {
-        Text("Singles").tag(PeptideCategory.single)
-        Text("Blends").tag(PeptideCategory.blend)
-      }
-      .pickerStyle(.segmented)
-
-      if searchText.isEmpty {
-        ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: 8) {
-            ForEach(PeptideTopic.allCases) { topic in
-              TopicFilterChip(
-                topic: topic,
-                isSelected: selectedTopic == topic,
-                action: { selectedTopic = topic }
-              )
-            }
-          }
-        }
-      }
-
-      HStack {
-        Toggle(isOn: $dealsOnly) {
-          Label("Deals", systemImage: "tag.fill")
-            .font(.caption)
-            .fontWeight(.medium)
-        }
-        .toggleStyle(.button)
-        .tint(dealsOnly ? AppTheme.sale : .secondary)
-
-        Menu {
-          Picker("Sort", selection: $sortOption) {
-            ForEach(PeptideSortOption.allCases, id: \.self) { option in
-              Text(option.rawValue).tag(option)
-            }
-          }
-        } label: {
-          Label(sortOption.rawValue, systemImage: "arrow.up.arrow.down")
-            .font(.caption)
-            .fontWeight(.medium)
-            .foregroundStyle(.secondary)
-        }
-
-        Spacer()
-
-        Picker("Show", selection: $displayMode) {
-          ForEach(PriceDisplayMode.allCases, id: \.self) { mode in
-            Text(mode.rawValue).tag(mode)
-          }
-        }
-        .pickerStyle(.segmented)
-        .frame(maxWidth: 150)
-      }
-    }
-  }
-
   private var emptyState: some View {
     Group {
       if !searchText.isEmpty {
         ContentUnavailableView.search(text: searchText)
-      } else if syncService.lastError != nil {
-        ContentUnavailableView {
-          Label("Sync Failed", systemImage: "exclamationmark.triangle")
-        } description: {
-          if let error = syncService.lastError {
-            Text(error)
-          }
-        } actions: {
-          Button("Retry") {
-            Task { await syncService.syncCatalog(context: modelContext) }
-          }
-          .buttonStyle(.borderedProminent)
-        }
       } else {
         ContentUnavailableView {
-          Label("No Peptides Loaded", systemImage: "pills")
-        } description: {
-          Text("Pull down to refresh, or tap Retry to fetch the catalog from Supabase.")
+          Label("No Peptides", systemImage: "pills")
         } actions: {
-          Button("Retry") {
-            Task { await syncService.syncCatalog(context: modelContext) }
-          }
-          .buttonStyle(.borderedProminent)
+          Button("Retry") { Task { await refresh() } }
         }
       }
     }
     .frame(maxWidth: .infinity)
-    .padding(.vertical, 24)
-  }
-
-  private func trend(for peptide: Peptide) -> PriceTrend? {
-    guard let dose = peptide.defaultDose else { return nil }
-    let currentBest = Price.sortedForCompare(dose.prices).first(where: \.inStock)?.pricePerMg
-    let result = PriceHistoryAnalytics.trend(
-      for: dose.id,
-      currentBestPerMg: currentBest,
-      points: allPricePoints
-    )
-    guard result.changePercent != nil || result.isLowestEver else { return nil }
-    return result
-  }
-
-  private func sorted(_ peptides: [Peptide]) -> [Peptide] {
-    switch sortOption {
-    case .name:
-      return peptides.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-    case .popularity:
-      return peptides.sorted {
-        PeptideCatalog.popularityRank(for: $0.slug) < PeptideCatalog.popularityRank(for: $1.slug)
-      }
-    case .price:
-      return peptides.sorted {
-        ($0.bestPricePerMg ?? .sortSentinel) < ($1.bestPricePerMg ?? .sortSentinel)
-      }
-    }
+    .padding(.vertical, 32)
   }
 }
 

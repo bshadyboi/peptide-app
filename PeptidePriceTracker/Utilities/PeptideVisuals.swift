@@ -84,6 +84,24 @@ extension PeptideTopic {
   }
 
   var accent: Color { gradient[0] }
+
+  /// Photorealistic vial image in Assets.xcassets (cap color matches category).
+  var vialAsset: String {
+    switch self {
+    case .all, .healing:
+      return "VialMint"
+    case .glp:
+      return "VialPurple"
+    case .growth:
+      return "VialPeach"
+    case .cosmetic:
+      return "VialPink"
+    case .cognitive:
+      return "VialBlue"
+    case .longevity:
+      return "VialGold"
+    }
+  }
 }
 
 struct PeptideArtwork: View {

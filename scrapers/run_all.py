@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -110,7 +111,9 @@ def main() -> int:
 
     vendors_ok = 0
     vendors_failed = 0
-    for name, scrape_fn, map_fn in scrapers:
+    for index, (name, scrape_fn, map_fn) in enumerate(scrapers):
+        if index > 0:
+            time.sleep(2.0)
         try:
             variations = scrape_fn()
             prices, missing = map_fn(variations, dose_map)

@@ -6,251 +6,164 @@ struct PeptideDetailView: View {
 
   @Environment(\.modelContext) private var modelContext
   @EnvironmentObject private var syncService: DataSyncService
-  @Query private var allPricePoints: [PricePoint]
+  @EnvironmentObject private var favorites: FavoritesStore
   @State private var selectedDoseID: UUID?
   @State private var showAlertSheet = false
   @State private var inStockOnly = true
+  @State private var dosePoints: [PricePoint] = []
 
-  private var sortedDoses: [Dose] {
-    peptide.doses.sorted { $0.mg < $1.mg }
-  }
+  private var doses: [Dose] { peptide.doses.sorted { $0.mg < $1.mg } }
 
   private var selectedDose: Dose? {
-    if let selectedDoseID,
-       let match = sortedDoses.first(where: { $0.id == selectedDoseID }) {
-      return match
-    }
-    return sortedDoses.first
+    if let id = selectedDoseID, let match = doses.first(where: { $0.id == id }) { return match }
+    return doses.first
   }
 
-  private var sortedPrices: [Price] {
-    guard let selectedDose else { return [] }
-    return Price.sortedForCompare(selectedDose.prices, inStockOnly: inStockOnly)
+  private var prices: [Price] {
+    guard let dose = selectedDose else { return [] }
+    return Price.sortedForCompare(dose.prices, inStockOnly: inStockOnly)
   }
 
-  private var bestInStockPrice: Price? {
-    sortedPrices.first(where: \.inStock)
-  }
+  private var best: Price? { prices.first(where: \.inStock) }
 
-  private var inStockVendorCount: Int {
-    guard let selectedDose else { return 0 }
-    let ids = Price.sortedForCompare(selectedDose.prices)
-      .filter(\.inStock)
-      .compactMap { $0.vendor?.id }
-    return Set(ids).count
-  }
-
-  private var priceTrend: PriceTrend {
-    guard let dose = selectedDose else {
-      return PriceTrend(changePercent: nil, isLowestEver: false, daysOfHistory: nil, historicalLow: nil)
-    }
-    return PriceHistoryAnalytics.trend(
+  private var trend: PriceTrend? {
+    guard let dose = selectedDose else { return nil }
+    let t = PriceHistoryAnalytics.trend(
       for: dose.id,
-      currentBestPerMg: bestInStockPrice?.pricePerMg,
-      points: allPricePoints
+      currentBestPerMg: best?.pricePerMg,
+      points: dosePoints
     )
+    return (t.changePercent != nil || t.isLowestEver) ? t : nil
   }
 
   var body: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: 20) {
-        PeptideHeroBanner(peptide: peptide)
-
-        if peptide.category == .blend, !peptide.blendComponents.isEmpty {
-          blendComponentsSection
-        } else if let description = peptide.peptideDescription {
-          Text(description)
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-        }
-
-        if !sortedDoses.isEmpty {
-          doseSelector
-        }
-
-        if let best = bestInStockPrice {
-          DetailBestPriceBanner(
-            price: best,
-            vendorCount: inStockVendorCount,
-            trend: priceTrend
-          )
-        }
-
+      VStack(alignment: .leading, spacing: 16) {
+        detailHero
+        if !doses.isEmpty { dosePicker }
+        if let best { DetailBestPriceBanner(price: best, trend: trend) }
         compareSection
       }
-      .padding(.horizontal)
-      .padding(.top, 8)
-      .padding(.bottom, 100)
+      .padding()
+      .padding(.bottom, 80)
     }
-    .background(AppTheme.pageBackground)
-    .navigationTitle("")
-    .navigationBarTitleDisplayMode(.inline)
-    .onAppear {
-      if selectedDoseID == nil {
-        selectedDoseID = sortedDoses.first?.id
+    .navigationTitle(peptide.name)
+    .navigationBarTitleDisplayMode(.large)
+    .background(DarkAuroraBackground())
+    .preferredColorScheme(.dark)
+    .toolbar {
+      ToolbarItem(placement: .topBarTrailing) {
+        Button {
+          favorites.toggle(peptide.slug)
+        } label: {
+          Image(systemName: favorites.isFavorite(peptide.slug) ? "heart.fill" : "heart")
+            .foregroundStyle(favorites.isFavorite(peptide.slug) ? AppTheme.sale : AppTheme.neonCyan)
+        }
       }
     }
-    .task(id: selectedDoseID) {
-      guard let selectedDoseID else { return }
-      await syncService.syncPrices(for: selectedDoseID, context: modelContext)
-      await syncService.syncHistory(for: selectedDoseID, range: .days90, context: modelContext)
-    }
-    .refreshable {
-      guard let selectedDoseID else { return }
-      await syncService.syncPrices(for: selectedDoseID, context: modelContext)
-      await syncService.syncHistory(for: selectedDoseID, range: .days90, context: modelContext)
-    }
-    .safeAreaInset(edge: .bottom) {
-      if selectedDose != nil {
-        detailActionBar
-      }
-    }
+    .onAppear { if selectedDoseID == nil { selectedDoseID = doses.first?.id } }
+    .task(id: selectedDoseID) { await reload() }
+    .refreshable { await reload() }
+    .safeAreaInset(edge: .bottom) { bottomBar }
     .sheet(isPresented: $showAlertSheet) {
       if let dose = selectedDose {
-        AlertSetupSheet(
-          dose: dose,
-          suggestedTarget: bestInStockPrice?.pricePerMg
-        )
+        AlertSetupSheet(dose: dose, suggestedTarget: best?.pricePerMg)
       }
     }
   }
 
-  private var blendComponentsSection: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Text("Blend")
-        .font(.caption)
-        .fontWeight(.semibold)
-        .foregroundStyle(.purple)
+  private var detailHero: some View {
+    HStack(spacing: 16) {
+      PeptideMonogramBadge(name: peptide.name, slug: peptide.slug, size: 64)
 
-      Text(
-        peptide.blendComponents
-          .sorted { $0.componentName < $1.componentName }
-          .map(\.displayLine)
-          .joined(separator: " · ")
-      )
-      .font(.subheadline)
-      .foregroundStyle(.secondary)
+      VStack(alignment: .leading, spacing: 6) {
+        let topic = PeptideCatalog.topic(for: peptide.slug)
+        if peptide.category == .blend {
+          DarkCategoryPill(label: "Blend", color: AppTheme.neonPurple)
+        } else if topic != .all {
+          DarkCategoryPill(label: topic.rawValue, color: topic.accent)
+        }
+
+        if let best = peptide.bestPricePerMg {
+          Text("from \(CurrencyFormatter.formatPerMg(best))")
+            .font(.title3.weight(.bold))
+            .foregroundStyle(AppTheme.neonCyan)
+            .monospacedDigit()
+        }
+      }
+
+      Spacer()
+    }
+    .padding(16)
+    .background {
+      RoundedRectangle(cornerRadius: 18, style: .continuous)
+        .fill(AppTheme.darkCard.opacity(0.85))
+        .overlay {
+          RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .strokeBorder(
+              LinearGradient(
+                colors: [AppTheme.neonCyan.opacity(0.4), AppTheme.neonPurple.opacity(0.3)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+              ),
+              lineWidth: 1
+            )
+        }
     }
   }
 
-  private var doseSelector: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Text("Dose")
-        .font(.caption)
-        .fontWeight(.semibold)
-        .foregroundStyle(.secondary)
-        .textCase(.uppercase)
-
-      ScrollView(.horizontal, showsIndicators: false) {
-        HStack(spacing: 8) {
-          ForEach(sortedDoses, id: \.id) { dose in
-            Button {
-              selectedDoseID = dose.id
-            } label: {
-              Text(dose.displayName)
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(
-                  selectedDose?.id == dose.id
-                    ? AppTheme.accent
-                    : Color(.tertiarySystemFill)
-                )
-                .foregroundStyle(
-                  selectedDose?.id == dose.id ? Color.white : Color.primary
-                )
-                .clipShape(Capsule())
-            }
-            .buttonStyle(.plain)
-          }
+  private var dosePicker: some View {
+    ScrollView(.horizontal, showsIndicators: false) {
+      HStack {
+        ForEach(doses, id: \.id) { dose in
+          Button(dose.displayName) { selectedDoseID = dose.id }
+            .buttonStyle(.bordered)
+            .tint(selectedDose?.id == dose.id ? AppTheme.accent : .secondary)
         }
       }
     }
   }
 
   private var compareSection: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      HStack {
-        Text("Compare")
-          .font(.caption)
-          .fontWeight(.semibold)
-          .foregroundStyle(.secondary)
-          .textCase(.uppercase)
-
-        Spacer()
-
-        Toggle("In stock", isOn: $inStockOnly)
-          .toggleStyle(.switch)
-          .controlSize(.mini)
-          .font(.caption)
-      }
-
-      if sortedPrices.isEmpty {
-        Text("No prices for this dose yet.")
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
-          .frame(maxWidth: .infinity)
-          .padding(.vertical, 32)
+    VStack(alignment: .leading, spacing: 8) {
+      Toggle("In stock only", isOn: $inStockOnly)
+      if prices.isEmpty {
+        Text("No prices yet.").foregroundStyle(.secondary)
       } else {
-        VendorCompareTable(
-          prices: sortedPrices,
-          bestPriceID: bestInStockPrice?.id
-        )
+        VendorCompareTable(prices: prices, bestPriceID: best?.id)
+      }
+      if let dose = selectedDose {
+        NavigationLink("Price history") { PriceHistoryView(dose: dose) }
+          .font(.subheadline)
       }
     }
   }
 
-  private var detailActionBar: some View {
-    HStack(spacing: 10) {
-      if let dose = selectedDose, let best = bestInStockPrice {
+  private var bottomBar: some View {
+    HStack {
+      if let dose = selectedDose, let best {
         ShareLink(item: ShareBestDeal.message(peptide: peptide, dose: dose, price: best)) {
-          Label("Share", systemImage: "square.and.arrow.up")
-            .labelStyle(.iconOnly)
-            .frame(width: 44, height: 44)
+          Image(systemName: "square.and.arrow.up")
         }
         .buttonStyle(.bordered)
       }
-
-      if let dose = selectedDose {
-        NavigationLink {
-          PriceHistoryView(dose: dose)
-        } label: {
-          Label("History", systemImage: "chart.xyaxis.line")
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.bordered)
-      }
-
-      Button {
-        showAlertSheet = true
-      } label: {
-        Label("Alert", systemImage: "bell.badge")
-          .frame(maxWidth: .infinity)
+      Button { showAlertSheet = true } label: {
+        Text("Alert").frame(maxWidth: .infinity)
       }
       .buttonStyle(.borderedProminent)
     }
-    .padding(.horizontal)
-    .padding(.vertical, 12)
+    .padding()
     .background(.bar)
   }
-}
 
-#Preview {
-  let peptide = Peptide(
-    name: "BPC-157",
-    slug: "bpc-157",
-    category: .single,
-    description: "Preview peptide"
-  )
-  let dose = Dose(mg: 5, peptide: peptide)
-  let vendor = Vendor(name: "Peptide Sciences")
-  let price = Price(price: 59.50, discountCode: "RESEARCH10", coaAvailable: true, dose: dose, vendor: vendor)
-  dose.prices = [price]
-  peptide.doses = [dose]
-
-  return NavigationStack {
-    PeptideDetailView(peptide: peptide)
-      .environmentObject(DataSyncService(api: nil, authSession: AuthSession()))
+  private func reload() async {
+    guard let id = selectedDoseID else { return }
+    await syncService.syncPrices(for: id, context: modelContext)
+    await syncService.syncHistory(for: id, range: .days30, context: modelContext)
+    let since = HistoryRange.days30.startDate
+    let descriptor = FetchDescriptor<PricePoint>(
+      predicate: #Predicate { $0.doseId == id && $0.capturedAt >= since }
+    )
+    dosePoints = (try? modelContext.fetch(descriptor)) ?? []
   }
 }
